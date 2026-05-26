@@ -165,24 +165,27 @@ class Authenticator:
         """
         if not self.tenant_id:
             raise ValueError("Tenant ID must be set for azure token authentication.")
-        
+
         if isinstance(scope, list):
+            if len(scope) == 0:
+                raise ValueError(
+                    "At least one scope must be set for azure token authentication."
+                )
             scope = scope[0]
         credential = DefaultAzureCredential()
         token = credential.get_token(scope, tenant_id=self.get_tenant_id())
-        return token[0]
+        return token.token
 
     def get_public_app_token(
         self,
         username: Optional[str] = None,
         scope: Optional[Union[List[str], str]] = None,
     ) -> str:
-        
         if not self.tenant_id:
             raise ValueError("Tenant ID must be set for public app authentication.")
         if not self.client_id:
             raise ValueError("Client ID must be set for public app authentication.")
-    
+
         if not username:
             username = self.user_name  # type: ignore
         else:
