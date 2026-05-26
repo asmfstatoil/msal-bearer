@@ -141,7 +141,7 @@ class Authenticator:
             DeprecationWarning,
             stacklevel=2,
         )
-        if self.client_id is None:
+        if not self.client_id:
             raise ValueError("client_id is not set")
         return self.client_id
 
@@ -151,7 +151,7 @@ class Authenticator:
             DeprecationWarning,
             stacklevel=2,
         )
-        if self.tenant_id is None:
+        if not self.tenant_id:
             raise ValueError("tenant_id must be set")
         return self.tenant_id
 
