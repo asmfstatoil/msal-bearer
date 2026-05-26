@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/Equinor/msal-bearer"
+Repository = "https://github.com/asmfstatoil/msal-bearer"
 
 [dependency-groups]
 dev = ["black>=25.10.0,<26"]

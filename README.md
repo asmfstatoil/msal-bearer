@@ -1,4 +1,4 @@
-# msal-bearer [![SNYK dependency check](https://github.com/equinor/msal-bearer/actions/workflows/snyk.yml/badge.svg)](https://github.com/equinor/msal-bearer/actions/workflows/snyk.yml)
+# msal-bearer
 Python package to get authorization token interactively for a msal application.  
 For public client application using user impersonation it also handles local cache and refreshing the token.
 
