@@ -95,3 +95,33 @@ def test_auth_type_property_for_azure_fallback() -> None:
         ValueError, match="Tenant ID must be set for azure token authentication."
     ):
         _ = auth.get_az_token(scope="scope")
+
+
+def test_get_az_token_returns_access_token_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    auth = Authenticator(tenant_id="tenant")
+
+    class DummyAccessToken:
+        def __init__(self, token: str):
+            self.token = token
+
+    class DummyCredential:
+        def get_token(self, scope: str, tenant_id: str):
+            assert scope == "scope"
+            assert tenant_id == "tenant"
+            return DummyAccessToken("az-token")
+
+    monkeypatch.setattr("msal_bearer.authenticator.DefaultAzureCredential", DummyCredential)
+
+    assert auth.get_az_token(scope="scope") == "az-token"
+
+
+def test_get_az_token_raises_for_empty_scope_list() -> None:
+    auth = Authenticator(tenant_id="tenant")
+
+    with pytest.raises(
+        ValueError,
+        match="At least one scope must be set for azure token authentication.",
+    ):
+        auth.get_az_token(scope=[])
