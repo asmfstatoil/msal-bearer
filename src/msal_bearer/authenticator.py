@@ -149,6 +149,8 @@ class Authenticator:
             DeprecationWarning,
             stacklevel=2,
         )
+        if self.tenant_id is None:
+            raise ValueError("tenant_id must be set")
         return self.tenant_id
 
     def set_client_secret(self, client_secret: str) -> None:
