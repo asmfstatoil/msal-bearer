@@ -1,6 +1,6 @@
 [project]
 name = "msal-bearer"
-version = "1.4.5"
+version = "1.5.0"
 description = "Python package to get auth token for a msal client application using msal, msal-extensions and azure-identity."
 authors = [{ name = "Åsmund Våge Fannemel", email = "asmf@equinor.com" }]
 requires-python = ">=3.9.2,<4"
@@ -26,7 +26,7 @@ dependencies = [
 Repository = "https://github.com/asmfstatoil/msal-bearer"
 
 [dependency-groups]
-dev = ["black>=25.10.0,<26"]
+dev = ["black>=25.10.0,<26", "pytest>=8.4.2,<9", "pytest-cov>=7.1.0,<8"]
 
 [tool.uv]
 default-groups = "all"

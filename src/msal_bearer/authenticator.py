@@ -1,8 +1,10 @@
-from azure.identity import DefaultAzureCredential
+import warnings
 from typing import List, Literal, Optional, Union
 
-from msal_bearer import BearerAuth
+from azure.identity import DefaultAzureCredential
 from msal import ConfidentialClientApplication
+
+from msal_bearer import BearerAuth
 
 
 class Authenticator:
@@ -39,15 +41,8 @@ class Authenticator:
             user_assertion (Optional[str]): User assertion token used for on-behalf-of flow. Defaults to not set.
         """
         self.tenant_id = tenant_id
-        if client_id is not None:
-            self.set_client_id(client_id)
-        else:
-            self.client_id = None
-
-        if client_secret is not None:
-            self.set_client_secret(client_secret)
-        else:
-            self.client_secret = None
+        self.client_id = client_id
+        self.client_secret = client_secret
 
         if authority:
             self.authority = authority
@@ -59,42 +54,61 @@ class Authenticator:
         self.token = ""
         self.user_name = user_name
         if scopes:
-            self.set_scope(scopes)
+            self.scopes = scopes
         else:
             self.scopes = []
 
         self.user_assertion = user_assertion
 
-    def set_client_id(self, client_id: str) -> None:
-        self.client_id = client_id
+    @property
+    def client_id(self) -> Union[str, None]:
+        return self._client_id
 
-    def get_client_id(self) -> str:
-        if not self.client_id:
-            raise ValueError("Client ID is not set")
-        return self.client_id
+    @client_id.setter
+    def client_id(self, client_id: Optional[str]) -> None:
+        self._client_id = client_id
 
-    def get_tenant_id(self) -> str:
-        if not self.tenant_id:
-            raise ValueError("Tenant ID is not set")
-        return self.tenant_id
+    @property
+    def tenant_id(self) -> Union[str, None]:
+        return self._tenant_id
 
-    def set_client_secret(self, client_secret: str) -> None:
-        self.client_secret = client_secret
+    @tenant_id.setter
+    def tenant_id(self, tenant_id: Optional[str]) -> None:
+        self._tenant_id = tenant_id
 
-    def set_token(self, token: str) -> None:
-        self.token = token
+    @property
+    def client_secret(self) -> Optional[str]:
+        return self._client_secret
 
-    def set_scope(self, scope: Union[List[str], str]) -> None:
+    @client_secret.setter
+    def client_secret(self, client_secret: Optional[str]) -> None:
+        self._client_secret = client_secret
+
+    @property
+    def token(self) -> str:
+        """Token property for Authenticator object. If getting token from external authentication."""
+        return self._token
+
+    @token.setter
+    def token(self, token: str) -> None:
+        if not isinstance(token, str):
+            raise ValueError("Token must be a string.")
+        self._token = token
+
+    @property
+    def scopes(self) -> List[str]:
+        if len(self._scopes) == 0 and self.client_id is not None:
+            return [f"{self.client_id}/.default"]
+        return self._scopes
+
+    @scopes.setter
+    def scopes(self, scope: Union[List[str], str]) -> None:
         if isinstance(scope, str):
             scope = [scope]
-        self.scopes = scope
+        self._scopes = scope
 
-    def get_scope(self) -> List[str]:
-        if self.scopes is None or len(self.scopes) == 0:
-            return [f"{self.get_client_id()}/.default"]
-        return self.scopes
-
-    def get_auth_type(
+    @property
+    def auth_type(
         self,
     ) -> Literal["preset", "client_secret", "obo", "public_app", "azure"]:
         if self.token:
@@ -112,28 +126,97 @@ class Authenticator:
         # https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python
         return "azure"
 
+    def set_client_id(self, client_id: str) -> None:
+        warnings.warn(
+            "set_client_id is deprecated; assign to property client_id instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.client_id = client_id
+
+    def get_client_id(self) -> str:
+        warnings.warn(
+            "get_client_id is deprecated; use property client_id instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if not self.client_id:
+            raise ValueError("Client ID is not set")
+        return self.client_id
+
+    def get_tenant_id(self) -> str:
+        warnings.warn(
+            "get_tenant_id is deprecated; use property tenant_id instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if not self.tenant_id:
+            raise ValueError("Tenant ID is not set")
+        return self.tenant_id
+
+    def set_client_secret(self, client_secret: str) -> None:
+        warnings.warn(
+            "set_client_secret is deprecated; assign to property client_secret instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.client_secret = client_secret
+
+    def set_token(self, token: str) -> None:
+        warnings.warn(
+            "set_token is deprecated; assign to property token instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.token = token
+
+    def set_scope(self, scope: Union[List[str], str]) -> None:
+        warnings.warn(
+            "set_scope is deprecated; assign to property scopes instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.scopes = scope
+
+    def get_scope(self) -> List[str]:
+        warnings.warn(
+            "get_scope is deprecated; use property scopes instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.scopes
+
+    def get_auth_type(
+        self,
+    ) -> Literal["preset", "client_secret", "obo", "public_app", "azure"]:
+        warnings.warn(
+            "get_auth_type is deprecated; use auth_type instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.auth_type
+
     def get_token(self, scopes: Optional[List[str]] = None) -> str:
         """Get token for Authenticator object. Will detect the type of authentication and call submethods.
 
         Args:
-            scopes (Optional[List[str]], optional): Scopes to fetch token for. Defaults to None, which will call self.get_scope()
+            scopes (Optional[List[str]], optional): Scopes to fetch token for. Defaults to None, which will use self.scopes.
 
         Raises:
             ValueError: Returns ValueError if token acquisition fails due to missing parameters or failure in authentication.
-
         Returns:
             str: Authenticator token.
         """
-        auth_type = self.get_auth_type()
+        auth_type = self.auth_type
         if auth_type == "preset":
             return self.token
 
         if scopes is None or len(scopes) == 0:
-            scopes = self.get_scope()
+            scopes = self.scopes
 
         if auth_type in ["client_secret", "obo"]:
             c = ConfidentialClientApplication(
-                client_id=self.get_client_id(),
+                client_id=self.client_id,
                 client_credential=self.client_secret,
                 authority=self.authority,
             )
@@ -173,7 +256,7 @@ class Authenticator:
                 )
             scope = scope[0]
         credential = DefaultAzureCredential()
-        token = credential.get_token(scope, tenant_id=self.get_tenant_id())
+        token = credential.get_token(scope, tenant_id=self.tenant_id)
         return token.token
 
     def get_public_app_token(
@@ -196,14 +279,14 @@ class Authenticator:
             username = username.upper()
 
         if scope is None:
-            scope = self.get_scope()
+            scope = self.scopes
 
         if isinstance(scope, str):
             scope = [scope]
 
         auth = BearerAuth.get_auth(
-            tenantID=self.get_tenant_id(),
-            clientID=self.get_client_id(),
+            tenantID=self.tenant_id,
+            clientID=self.client_id,
             scopes=scope,
             username=username,
         )
