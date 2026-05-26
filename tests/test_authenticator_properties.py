@@ -25,6 +25,13 @@ def test_init_sets_properties() -> None:
     assert auth.token == ""
 
 
+def test_init_prefers_explicit_authority() -> None:
+    authority = "https://custom.authority.example"
+    auth = Authenticator(tenant_id="tenant", authority=authority)
+
+    assert auth.authority == authority
+
+
 def test_scopes_property_converts_string_to_list() -> None:
     auth = Authenticator(client_id="client")
 
