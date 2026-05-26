@@ -49,7 +49,9 @@ class Authenticator:
         else:
             self.client_secret = None
 
-        if authority is None and tenant_id is not None:
+        if authority:
+            self.authority = authority
+        elif tenant_id is not None:
             self.authority = f"https://login.microsoftonline.com/{tenant_id}"
         else:
             self.authority = None
