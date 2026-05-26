@@ -142,7 +142,7 @@ class Authenticator:
             stacklevel=2,
         )
         if not self.client_id:
-            raise ValueError("client_id is not set")
+            raise ValueError("Client ID is not set")
         return self.client_id
 
     def get_tenant_id(self) -> Union[str, None]:
@@ -152,7 +152,7 @@ class Authenticator:
             stacklevel=2,
         )
         if not self.tenant_id:
-            raise ValueError("tenant_id must be set")
+            raise ValueError("Tenant ID is not set")
         return self.tenant_id
 
     def set_client_secret(self, client_secret: str) -> None:
