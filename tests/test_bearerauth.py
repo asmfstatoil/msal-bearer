@@ -77,6 +77,29 @@ def test_bearerauth_init_accepts_token_dict_with_access_result() -> None:
     assert auth.token == "abc123"
 
 
+def test_bearerauth_init_keeps_string_token() -> None:
+    auth = bearerauth.BearerAuth("plain-token")
+
+    assert auth.token == "plain-token"
+
+
+def test_bearerauth_init_rejects_dict_without_access_result() -> None:
+    token_dict = {"access_token": "abc123", "expires_in": 3600}
+
+    with pytest.raises(
+        ValueError,
+        match="Token must be a string or a dict with key 'access_result'",
+    ):
+        bearerauth.BearerAuth(token_dict)
+
+
+def test_bearerauth_token_property_is_read_only() -> None:
+    auth = bearerauth.BearerAuth("token-1")
+
+    with pytest.raises(AttributeError):
+        auth.token = "token-2"  # type: ignore[misc]
+
+
 def test_bearerauth_call_sets_authorization_header() -> None:
     class DummyRequest:
         def __init__(self):
