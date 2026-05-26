@@ -26,7 +26,7 @@ dependencies = [
 Repository = "https://github.com/asmfstatoil/msal-bearer"
 
 [dependency-groups]
-dev = ["black>=25.10.0,<26", "pytest>=8.4.2,<9", "pytest-cov (>=7.1.0,<8.0.0)"]
+dev = ["black>=25.10.0,<26", "pytest>=8.4.2,<9", "pytest-cov>=7.1.0,<8"]
 
 [tool.uv]
 default-groups = "all"
