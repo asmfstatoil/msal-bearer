@@ -50,7 +50,6 @@ class Authenticator:
             self.authority = f"https://login.microsoftonline.com/{tenant_id}"
         else:
             self.authority = None
-
         self.redirect_uri = redirect_uri
         self.token = ""
         self.user_name = user_name
