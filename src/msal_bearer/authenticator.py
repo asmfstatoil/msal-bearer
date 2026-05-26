@@ -119,7 +119,7 @@ class Authenticator:
             scopes (Optional[List[str]], optional): Scopes to fetch token for. Defaults to None, which will call self.get_scope()
 
         Raises:
-            ValueError: _description_
+            ValueError: Returns ValueError if token acquisition fails due to missing parameters or failure in authentication.
 
         Returns:
             str: Authenticator token.
@@ -163,6 +163,9 @@ class Authenticator:
         Returns:
             str: Token from azure authentication
         """
+        if not self.tenant_id:
+            raise ValueError("Tenant ID must be set for azure token authentication.")
+        
         if isinstance(scope, list):
             scope = scope[0]
         credential = DefaultAzureCredential()
@@ -174,6 +177,12 @@ class Authenticator:
         username: Optional[str] = None,
         scope: Optional[Union[List[str], str]] = None,
     ) -> str:
+        
+        if not self.tenant_id:
+            raise ValueError("Tenant ID must be set for public app authentication.")
+        if not self.client_id:
+            raise ValueError("Client ID must be set for public app authentication.")
+    
         if not username:
             username = self.user_name  # type: ignore
         else:
