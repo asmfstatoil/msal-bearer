@@ -86,6 +86,7 @@ class Authenticator:
 
     @property
     def token(self) -> str:
+        """Token property for Authenticator object. If getting token from external authentication."""
         return self._token
 
     @token.setter
@@ -199,7 +200,6 @@ class Authenticator:
 
         Raises:
             ValueError: Returns ValueError if token acquisition fails due to missing parameters or failure in authentication.
-
         Returns:
             str: Authenticator token.
         """
