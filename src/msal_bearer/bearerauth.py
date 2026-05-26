@@ -219,11 +219,20 @@ class BearerAuth:
         if isinstance(token, dict) and "access_result" in token:
             token = token["access_result"]
 
-        self.token = token
+        if not isinstance(token, str):
+            raise ValueError(
+                "Token must be a string or a dict with key 'access_result'."
+            )
+        self._token = token
 
     def __call__(self, r):
         r.headers["authorization"] = f"Bearer {self.token}"
         return r
+
+    @property
+    def token(self) -> str:
+        """Token property for BearerAuth object."""
+        return self._token
 
     @staticmethod
     def get_auth(
