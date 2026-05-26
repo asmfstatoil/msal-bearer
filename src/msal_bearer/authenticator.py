@@ -145,7 +145,7 @@ class Authenticator:
             raise ValueError("Client ID is not set")
         return self.client_id
 
-    def get_tenant_id(self) -> Union[str, None]:
+    def get_tenant_id(self) -> str:
         warnings.warn(
             "get_tenant_id is deprecated; use property tenant_id instead.",
             DeprecationWarning,
