@@ -284,11 +284,6 @@ class Authenticator:
         if isinstance(scope, str):
             scope = [scope]
 
-        if not self.tenant_id:
-            raise ValueError("Tenant ID must be set for public app authentication.")
-        if not self.client_id:
-            raise ValueError("Client ID must be set for public app authentication.")
-
         auth = BearerAuth.get_auth(
             tenantID=self.tenant_id,
             clientID=self.client_id,
