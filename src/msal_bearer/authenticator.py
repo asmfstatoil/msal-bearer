@@ -1,10 +1,13 @@
-import warnings
-from typing import List, Literal, Optional, Union
+from __future__ import annotations
 
-from azure.identity import DefaultAzureCredential
-from msal import ConfidentialClientApplication
+import warnings
+from typing import TYPE_CHECKING, List, Literal, Optional, Union
 
 from msal_bearer import BearerAuth
+
+if TYPE_CHECKING:
+    from azure.identity import DefaultAzureCredential
+    from msal import ConfidentialClientApplication
 
 
 class Authenticator:
@@ -242,6 +245,8 @@ class Authenticator:
     def _get_confidential_client_application(self) -> ConfidentialClientApplication:
         configuration = (self.client_id, self.client_secret, self.authority)
         if configuration != self._confidential_app_configuration:
+            from msal import ConfidentialClientApplication
+
             self._confidential_app = ConfidentialClientApplication(
                 client_id=self.client_id,
                 client_credential=self.client_secret,
@@ -253,6 +258,8 @@ class Authenticator:
 
     def _get_azure_credential(self) -> DefaultAzureCredential:
         if self._azure_credential is None:
+            from azure.identity import DefaultAzureCredential
+
             self._azure_credential = DefaultAzureCredential()
         return self._azure_credential
 
