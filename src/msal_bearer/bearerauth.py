@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, List, Optional, Union
+import threading
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+
 
 if TYPE_CHECKING:
     from azure.identity import InteractiveBrowserCredential
+    from msal import PublicClientApplication
 
 _token_location = "token_cache.bin"
 _username = ""
+_app_cache: Dict[Tuple[str, str, str], PublicClientApplication] = {}
+_app_cache_lock = threading.RLock()
 
 
 def get_token(tenant_id: str, client_id: str, scopes: List[str]) -> str:
@@ -98,7 +103,9 @@ def get_login_name() -> str:
     return ""
 
 
-def get_app_with_cache(client_id, authority: str, token_location: str = ""):
+def get_app_with_cache(
+    client_id: str, authority: str, token_location: str = ""
+) -> PublicClientApplication:
     """Get msal PublicClientApplication to authenticate against, with cached token if available.
 
     Args:
@@ -108,10 +115,10 @@ def get_app_with_cache(client_id, authority: str, token_location: str = ""):
                 Defaults to "" which uses previously set value or "token_cache.bin" if not yet set.
 
     Returns:
-        msal.PublicClientApplication: Application object to authenticate with.
+        PublicClientApplication: Application object to authenticate with.
     """
 
-    import msal
+    from msal import PublicClientApplication
     from msal_extensions import (
         FilePersistence,
         PersistedTokenCache,
@@ -121,16 +128,31 @@ def get_app_with_cache(client_id, authority: str, token_location: str = ""):
     if isinstance(token_location, str) and len(token_location) > 0:
         set_token_location(token_location)
 
-    try:
-        persistence = build_encrypted_persistence(get_token_location())
-    except (ImportError, RuntimeError):
-        # Handle linux case of missing gi library (ImportError)
-        persistence = FilePersistence(get_token_location())
+    cache_location = os.path.abspath(token_location or get_token_location())
+    cache_key = (client_id, authority, cache_location)
+    with _app_cache_lock:
+        app = _app_cache.get(cache_key)
+        if app is not None:
+            return app
 
-    cache = PersistedTokenCache(persistence)
-    return msal.PublicClientApplication(
-        client_id=client_id, authority=authority, token_cache=cache
-    )
+        try:
+            persistence = build_encrypted_persistence(cache_location)
+        except (ImportError, RuntimeError):
+            # Handle linux case of missing gi library (ImportError)
+            persistence = FilePersistence(cache_location)
+
+        cache = PersistedTokenCache(persistence)
+        app = PublicClientApplication(
+            client_id=client_id, authority=authority, token_cache=cache
+        )
+        _app_cache[cache_key] = app
+        return app
+
+
+def _discard_cached_app(client_id: str, authority: str, token_location: str) -> None:
+    cache_key = (client_id, authority, os.path.abspath(token_location))
+    with _app_cache_lock:
+        _app_cache.pop(cache_key, None)
 
 
 def get_tenant_authority(tenant_id: str) -> str:
@@ -282,12 +304,13 @@ class BearerAuth:
             # User name must match including domain, if not caching will not work.
             accounts = app.get_accounts(username=username)
         except Exception:
-            if os.path.isfile(get_token_location()):
+            _discard_cached_app(clientID, authority, token_location)
+            if os.path.isfile(token_location):
                 if verbose:
                     print(
-                        f"Failed getting accounts from app with cache. Attempts to delete cache-file at {get_token_location()}"
+                        f"Failed getting accounts from app with cache. Attempts to delete cache-file at {token_location}"
                     )
-                os.remove(get_token_location())
+                os.remove(token_location)
             app = get_app_with_cache(
                 client_id=clientID, authority=authority, token_location=token_location
             )
@@ -314,8 +337,14 @@ class BearerAuth:
                     scopes=scopes, domain_hint=tenantID
                 )
             except OSError:
-                if os.path.isfile(get_token_location()):
-                    os.remove(get_token_location())
+                if os.path.isfile(token_location):
+                    _discard_cached_app(clientID, authority, token_location)
+                    os.remove(token_location)
+                    app = get_app_with_cache(
+                        client_id=clientID,
+                        authority=authority,
+                        token_location=token_location,
+                    )
                     result = app.acquire_token_interactive(
                         scopes=scopes, domain_hint=tenantID
                     )
