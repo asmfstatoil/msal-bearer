@@ -40,6 +40,9 @@ class Authenticator:
             user_name (Optional[str], optional): User name used for hinting during interactive login and checking for cache. Defaults to None.
             user_assertion (Optional[str]): User assertion token used for on-behalf-of flow. Defaults to not set.
         """
+        self._confidential_app: Optional[ConfidentialClientApplication] = None
+        self._confidential_app_configuration = None
+        self._azure_credential: Optional[DefaultAzureCredential] = None
         self.tenant_id = tenant_id
         self.client_id = client_id
         self.client_secret = client_secret
@@ -215,11 +218,7 @@ class Authenticator:
             scopes = self.scopes
 
         if auth_type in ["client_secret", "obo"]:
-            c = ConfidentialClientApplication(
-                client_id=self.client_id,
-                client_credential=self.client_secret,
-                authority=self.authority,
-            )
+            c = self._get_confidential_client_application()
 
             if auth_type == "client_secret":
                 d = c.acquire_token_for_client(scopes=scopes)
@@ -240,6 +239,30 @@ class Authenticator:
 
         return self.get_az_token(scope=scopes)
 
+    def _get_confidential_client_application(self) -> ConfidentialClientApplication:
+        configuration = (self.client_id, self.client_secret, self.authority)
+        if configuration != self._confidential_app_configuration:
+            self._confidential_app = ConfidentialClientApplication(
+                client_id=self.client_id,
+                client_credential=self.client_secret,
+                authority=self.authority,
+            )
+            self._confidential_app_configuration = configuration
+        assert self._confidential_app is not None
+        return self._confidential_app
+
+    def _get_azure_credential(self) -> DefaultAzureCredential:
+        if self._azure_credential is None:
+            self._azure_credential = DefaultAzureCredential()
+        return self._azure_credential
+
+    def close(self) -> None:
+        """Close the cached Azure credential, if it has been created."""
+        credential = self._azure_credential
+        self._azure_credential = None
+        if credential is not None:
+            credential.close()
+
     def get_az_token(self, scope: Union[List[str], str]) -> str:
         """Getter for token uzing azure authentication.
 
@@ -255,7 +278,7 @@ class Authenticator:
                     "At least one scope must be set for azure token authentication."
                 )
             scope = scope[0]
-        credential = DefaultAzureCredential()
+        credential = self._get_azure_credential()
         token = credential.get_token(scope, tenant_id=self.tenant_id)
         return token.token
 
