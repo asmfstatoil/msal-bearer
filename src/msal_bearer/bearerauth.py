@@ -1,16 +1,10 @@
+from __future__ import annotations
+
 import os
-from typing import List, Optional, Union
-import msal
-from azure.identity import (
-    InteractiveBrowserCredential,
-    TokenCachePersistenceOptions,
-    AuthenticationRecord,
-)
-from msal_extensions import (
-    build_encrypted_persistence,
-    FilePersistence,
-    PersistedTokenCache,
-)
+from typing import TYPE_CHECKING, List, Optional, Union
+
+if TYPE_CHECKING:
+    from azure.identity import InteractiveBrowserCredential
 
 _token_location = "token_cache.bin"
 _username = ""
@@ -117,6 +111,13 @@ def get_app_with_cache(client_id, authority: str, token_location: str = ""):
         msal.PublicClientApplication: Application object to authenticate with.
     """
 
+    import msal
+    from msal_extensions import (
+        FilePersistence,
+        PersistedTokenCache,
+        build_encrypted_persistence,
+    )
+
     if isinstance(token_location, str) and len(token_location) > 0:
         set_token_location(token_location)
 
@@ -159,6 +160,12 @@ def get_interactive_browser_credential(
     Returns:
         InteractiveBrowserCredential: Credential used to get token.
     """
+    from azure.identity import (
+        AuthenticationRecord,
+        InteractiveBrowserCredential,
+        TokenCachePersistenceOptions,
+    )
+
     if client_id:
         name = client_id
     else:
