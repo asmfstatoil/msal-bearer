@@ -1,4 +1,6 @@
 import pytest
+import msal
+import msal_extensions
 
 import msal_bearer.bearerauth as bearerauth
 
@@ -69,6 +71,62 @@ def test_get_tenant_authority() -> None:
         bearerauth.get_tenant_authority("tenant")
         == "https://login.microsoftonline.com/tenant"
     )
+
+
+def test_get_app_with_cache_reuses_apps_without_crossing_cache_boundaries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class DummyApp:
+        def __init__(self, client_id: str, authority: str, token_cache: object):
+            self.client_id = client_id
+            self.authority = authority
+            self.token_cache = token_cache
+
+    created_apps = []
+    created_persistences = []
+
+    def create_app(client_id: str, authority: str, token_cache: object) -> DummyApp:
+        app = DummyApp(client_id, authority, token_cache)
+        created_apps.append(app)
+        return app
+
+    monkeypatch.setattr(bearerauth, "_app_cache", {})
+    monkeypatch.setattr(bearerauth, "_token_location", "token_cache.bin")
+    monkeypatch.setattr(
+        msal_extensions,
+        "build_encrypted_persistence",
+        lambda location: created_persistences.append(location) or location,
+    )
+    monkeypatch.setattr(
+        msal_extensions,
+        "PersistedTokenCache",
+        lambda persistence: ("cache", persistence),
+    )
+    monkeypatch.setattr(msal, "PublicClientApplication", create_app)
+
+    first = bearerauth.get_app_with_cache(
+        "client", "https://authority", "cache-one.bin"
+    )
+    repeated = bearerauth.get_app_with_cache(
+        "client", "https://authority", "cache-one.bin"
+    )
+    different_cache = bearerauth.get_app_with_cache(
+        "client", "https://authority", "cache-two.bin"
+    )
+    different_authority = bearerauth.get_app_with_cache(
+        "client", "https://other-authority", "cache-one.bin"
+    )
+    bearerauth._discard_cached_app("client", "https://authority", "cache-one.bin")
+    recreated = bearerauth.get_app_with_cache(
+        "client", "https://authority", "cache-one.bin"
+    )
+
+    assert repeated is first
+    assert different_cache is not first
+    assert different_authority is not first
+    assert recreated is not first
+    assert len(created_apps) == 4
+    assert len(created_persistences) == 4
 
 
 def test_bearerauth_init_accepts_token_dict_with_access_token() -> None:
